@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.List;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -17,9 +18,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.omg.CORBA.Request;
+
 import com.IDP.DAO.GanttChartMaker;
 import com.IDP.DAO.excelSheetReader;
 import com.IDP.Models.AllData;
+import com.IDP.Models.Rect;
 
 /**
  * Servlet implementation class fileUploadServlet
@@ -41,7 +45,11 @@ public class fileUploadServlet extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	
+		System.out.println("Inside fileUpload GET");
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/index.jsp");
+	    dispatcher.forward(request, response);
+	
 	}
 
 	/**
@@ -50,7 +58,7 @@ public class fileUploadServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		// Create path components to save the file
-	    final String path = "E:\\Transfers";
+	    final String path = "/home/saionchatterjee/Videos";
 	    final Part filePart = request.getPart("excelFile");
 	    final String fileName = getFileName(filePart);
 
@@ -59,7 +67,7 @@ public class fileUploadServlet extends HttpServlet {
 	    final PrintWriter writer = response.getWriter();
 
 	    try {
-	        out = new FileOutputStream(new File(path + File.separator + fileName));
+	        out = new FileOutputStream(new File(path + '/' + fileName));
 	        filecontent = filePart.getInputStream();
 
 	        int read = 0;
@@ -71,9 +79,16 @@ public class fileUploadServlet extends HttpServlet {
 	       System.out.println("New file " + fileName + " created at " + path);
 	       excelSheetReader sheetReader = new excelSheetReader();
 	       AllData allData = new AllData();
-	       allData = sheetReader.returnAllData(path + "\\" +fileName);
+	       allData = sheetReader.returnAllData(path + "/" +fileName);
+	       
 	       GanttChartMaker ganttChartMaker = new GanttChartMaker();
-	       ganttChartMaker.createGanttChart(allData);
+	       
+	       List<Rect> rectList =  ganttChartMaker.createGanttChart(allData);
+	       
+	       request.setAttribute("rectList", rectList);
+	       
+	       RequestDispatcher dispatcher = request.getRequestDispatcher("/ganttchart.jsp");
+		    dispatcher.forward(request, response); 
 	    } catch (FileNotFoundException fne) {
 	        writer.println("You either did not specify a file to upload or are "
 	                + "trying to upload a file to a protected or nonexistent "
@@ -90,7 +105,10 @@ public class fileUploadServlet extends HttpServlet {
 	            writer.close();
 	        }
 	    }
-	}
+	    
+	    /*RequestDispatcher dispatcher = request.getRequestDispatcher("/ganttchart.jsp");
+	    dispatcher.forward(request, response);
+	*/}
 
 	private String getFileName(final Part part) {
 	    for (String content : part.getHeader("content-disposition").split(";")) {
